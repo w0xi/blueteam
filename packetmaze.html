@@ -264,9 +264,7 @@
         This reveals <code>mail.protonmail.com</code> and its IP address <code>185.70.41.130</code>
         <img src="screenshots/lab2_packetmaze/lab2_wireshark_protonmail_5A.png" alt="">
         <img src="screenshots/lab2_packetmaze/lab2_wireshark_protonmail_5B.png" alt="">
-        Two TLS questions required locating specific sessions: one by session ID, one by destination domain. For the session ID, <code>tls</code> was used to search for <code>da4a0000342e4b73...</code>, returning frame 26906.
-        <img src="" alt="">
-        The reassembled PDU in frame 26913 contained the full TLS handshake and server certificate public key under Server Key Exchange.
+        Two TLS questions required locating specific sessions: one by session ID, one by destination domain. For the session ID, <code>tls</code> was used to search for <code>da4a0000342e4b73...</code>, returning frame 26906 and the reassembled PDU in frame 26913 contained the full TLS handshake and server certificate public key under Server Key Exchange.
         <img src="" alt="">
         For ProtonMail, <code>tls.handshake.type == 1 && tls.handshake.extensions_server_name=="protonmail.com"</code> the first Client Hello — at <strong>2021-04-30 01:04:29 UTC</strong> — contained the TLS 1.3 client random: <strong>24e92513b97a0348f733d16996929a79be21b0b1400cd7e2862a732ce7775b70</strong>. ProtonMail is end-to-end encrypted.
         <img src="screenshots/lab2_packetmaze/lab2_wireshark_randomTLSkey_6.png" alt="">
