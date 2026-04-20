@@ -399,7 +399,7 @@
       <span class="section-num">06</span>
       <span class="section-title">Lessons Learned</span>
     </div>
-    <div class="lesson"><span class="lesson-num">01</span><span class="lesson-text">The PAGE_EXECUTE_READWRITE flag combined with an MZ header is a clear code injection indicator. Legitimate DLLs do not load this way.</span></div>
+    <div class="lesson"><span class="lesson-num">01</span><span class="lesson-text">The PAGE_EXECUTE_READWRITE flag combined with an MZ header is a clear code injection indicator, legitimate DLLs do not load this way.</span></div>
     <div class="lesson"><span class="lesson-num">02</span><span class="lesson-text">The ldrmodules InLoad/InInit/InMem flags are more reliable than filenames for identifying hidden modules.</span></div>
     <div class="lesson"><span class="lesson-num">03</span><span class="lesson-text">BlackEnergy's kernel driver (str.sys) illustrates why memory forensics is essential, a rootkit operating at kernel level can hide itself from the OS entirely, making disk-based artifacts unreliable. Memory is the ground truth.</span></div>
     <div class="lesson"><span class="lesson-num">04</span><span class="lesson-text">Volatility plugin sequencing — pslist → pstree → malfind → ldrmodules → handles — is a repeatable Windows memory triage workflow covering process anomalies, injection, hidden modules, and file artifacts in a logical order.</span></div>
