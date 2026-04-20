@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BlackEnergy v2 — Write-Up</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Syne:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0f12;
+    --surface: #13161b;
+    --surface2: #1a1e25;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #e8eaf0;
+    --muted: #6b7280;
+    --subtle: #9ca3af;
+    --accent: #185FA5;
+    --accent-light: #378ADD;
+    --accent-bg: rgba(24,95,165,0.12);
+    --green: #1D9E75;
+    --green-bg: rgba(29,158,117,0.1);
+    --amber: #BA7517;
+    --amber-bg: rgba(186,117,23,0.1);
+    --red: #A32D2D;
+    --red-bg: rgba(163,45,45,0.1);
+    --purple: #534AB7;
+    --purple-bg: rgba(83,74,183,0.1);
+    --pink: #993556;
+    --pink-bg: rgba(153,53,86,0.1);
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'Syne', sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.7;
+    min-height: 100vh;
+  }
+  /* Nav */
+  nav {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(13,15,18,0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 2rem;
+    display: flex; align-items: center; justify-content: space-between;
+    height: 52px;
+  }
+  .nav-brand { font-family: var(--mono); font-size: 12px; color: var(--accent-light); letter-spacing: 0.08em; }
+  .nav-links { display: flex; gap: 1.5rem; }
+  .nav-links a { font-family: var(--mono); font-size: 11px; color: var(--muted); text-decoration: none; letter-spacing: 0.05em; transition: color 0.2s; }
+  .nav-links a:hover { color: var(--text); }
+
+  /* Hero */
+  .hero {
+    border-bottom: 1px solid var(--border);
+    padding: 4rem 2rem 3rem;
+    max-width: 900px; margin: 0 auto;
+    animation: fadeUp 0.6s ease both;
+  }
+  .hero-eyebrow {
+    font-family: var(--mono); font-size: 11px; color: var(--accent-light);
+    letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 1rem;
+  }
+  .hero-title {
+    font-size: clamp(24px, 4vw, 38px); font-weight: 700;
+    line-height: 1.2; color: var(--text); margin-bottom: 1rem;
+  }
+  .hero-title span { color: var(--accent-light); }
+  .hero-sub { font-size: 14px; color: var(--subtle); max-width: 600px; margin-bottom: 1.5rem; }
+  .badge-row { display: flex; flex-wrap: wrap; gap: 8px; }
+  .badge {
+    font-family: var(--mono); font-size: 10px; font-weight: 500;
+    padding: 3px 10px; border-radius: 4px; letter-spacing: 0.05em;
+    border: 1px solid;
+  }
+  .b-blue { background: var(--accent-bg); color: var(--accent-light); border-color: rgba(55,138,221,0.3); }
+  .b-green { background: var(--green-bg); color: #5DCAA5; border-color: rgba(29,158,117,0.3); }
+  .b-amber { background: var(--amber-bg); color: #EF9F27; border-color: rgba(186,117,23,0.3); }
+  .b-purple { background: var(--purple-bg); color: #AFA9EC; border-color: rgba(83,74,183,0.3); }
+
+  /* Layout */
+  .container { max-width: 900px; margin: 0 auto; padding: 3rem 2rem; }
+
+  /* Meta grid */
+  .meta-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 1px; background: var(--border); border: 1px solid var(--border);
+    border-radius: 8px; overflow: hidden; margin-bottom: 3rem;
+    animation: fadeUp 0.6s 0.1s ease both;
+  }
+  .meta-cell { background: var(--surface); padding: 14px 16px; }
+  .meta-label { font-family: var(--mono); font-size: 9px; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 5px; }
+  .meta-value { font-family: var(--mono); font-size: 12px; color: var(--text); font-weight: 500; word-break: break-all; }
+
+  /* Sections */
+  .section { margin-bottom: 3rem; animation: fadeUp 0.6s ease both; }
+  .section-header {
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 1.25rem; padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .section-num { font-family: var(--mono); font-size: 10px; color: var(--accent-light); letter-spacing: 0.1em; }
+  .section-title { font-size: 16px; font-weight: 700; color: var(--text); }
+
+  /* Prose */
+  .prose { font-size: 14px; color: var(--subtle); line-height: 1.8; }
+  .prose code { font-family: var(--mono); font-size: 12px; background: var(--surface2); color: var(--accent-light); padding: 1px 6px; border-radius: 3px; }
+
+  /* Tool chips */
+  .chip-row { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip {
+    font-family: var(--mono); font-size: 11px; padding: 4px 12px;
+    border-radius: 4px; background: var(--surface2); color: var(--subtle);
+    border: 1px solid var(--border2);
+  }
+  .chip.accent { background: var(--accent-bg); color: var(--accent-light); border-color: rgba(55,138,221,0.25); }
+
+  /* MITRE table */
+  .mitre-wrap { overflow-x: auto; border-radius: 8px; border: 1px solid var(--border); }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th {
+    font-family: var(--mono); font-size: 9px; font-weight: 500;
+    color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em;
+    padding: 10px 14px; text-align: left; background: var(--surface);
+    border-bottom: 1px solid var(--border);
+  }
+  td { padding: 10px 14px; border-bottom: 1px solid var(--border); vertical-align: top; line-height: 1.5; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+  .tactic {
+    font-family: var(--mono); font-size: 10px; font-weight: 500;
+    padding: 2px 8px; border-radius: 3px; white-space: nowrap; display: inline-block;
+  }
+  .t-exec { background: var(--amber-bg); color: #EF9F27; }
+  .t-priv { background: var(--red-bg); color: #E24B4A; }
+  .t-def  { background: var(--purple-bg); color: #AFA9EC; }
+  .t-disc { background: var(--accent-bg); color: var(--accent-light); }
+  .t-coll { background: var(--green-bg); color: #5DCAA5; }
+  .tid { font-family: var(--mono); font-size: 11px; color: var(--muted); white-space: nowrap; }
+  .tid a { color: var(--accent-light); text-decoration: none; }
+  .tid a:hover { text-decoration: underline; }
+  .ev { font-size: 12px; color: var(--muted); }
+
+  /* Phases */
+  .phase { margin-bottom: 2rem; }
+  .phase-header { display: flex; gap: 14px; align-items: flex-start; margin-bottom: 0.75rem; }
+  .phase-dot {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: var(--accent-bg); border: 1px solid rgba(55,138,221,0.4);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; margin-top: 2px;
+    font-family: var(--mono); font-size: 10px; color: var(--accent-light); font-weight: 500;
+  }
+  .phase-title { font-size: 14px; font-weight: 700; color: var(--text); padding-top: 4px; }
+  .phase-body { margin-left: 42px; font-size: 14px; color: var(--subtle); line-height: 1.8; }
+  .phase-body code { font-family: var(--mono); font-size: 12px; background: var(--surface2); color: var(--accent-light); padding: 1px 6px; border-radius: 3px; }
+
+  /* Code block */
+  .cmd { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 10px 14px; font-family: var(--mono); font-size: 12px; color: #5DCAA5; margin: 10px 0; overflow-x: auto; }
+
+  /* Screenshot placeholder */
+  .ss {
+    border: 1px dashed rgba(255,255,255,0.1); border-radius: 6px;
+    padding: 14px; text-align: center; margin: 10px 0;
+    font-family: var(--mono); font-size: 11px; color: var(--muted);
+    background: rgba(255,255,255,0.02);
+  }
+  .ss img { max-width: 100%; border-radius: 4px; display: block; margin: 0 auto; }
+
+  /* IOC grid */
+  .ioc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .ioc-card { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 12px 14px; }
+  .ioc-label { font-family: var(--mono); font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 5px; }
+  .ioc-val { font-family: var(--mono); font-size: 12px; color: var(--text); word-break: break-all; }
+
+  /* Timeline */
+  .timeline { border-left: 1px solid var(--border2); padding-left: 1.5rem; margin-left: 0.5rem; }
+  .tl-row { position: relative; margin-bottom: 1rem; }
+  .tl-row::before { content: ''; position: absolute; left: -1.625rem; top: 6px; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); border: 2px solid var(--bg); }
+  .tl-time { font-family: var(--mono); font-size: 11px; color: var(--accent-light); margin-bottom: 2px; }
+  .tl-event { font-size: 13px; color: var(--subtle); }
+
+  /* Lessons */
+  .lesson { display: flex; gap: 12px; margin-bottom: 1.25rem; padding: 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; }
+  .lesson-num { font-family: var(--mono); font-size: 11px; color: var(--accent-light); flex-shrink: 0; padding-top: 1px; min-width: 20px; }
+  .lesson-text { font-size: 13px; color: var(--subtle); line-height: 1.7; }
+
+  /* Refs */
+  .ref-list { list-style: none; }
+  .ref-list li { padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .ref-list li:last-child { border-bottom: none; }
+  .ref-list a { color: var(--accent-light); text-decoration: none; font-family: var(--mono); font-size: 12px; }
+  .ref-list a:hover { text-decoration: underline; }
+
+  /* Footer */
+  footer { border-top: 1px solid var(--border); padding: 2rem; text-align: center; font-family: var(--mono); font-size: 11px; color: var(--muted); }
+
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+  @media (max-width: 600px) { .ioc-grid { grid-template-columns: 1fr; } .nav-links { display: none; } }
+</style>
+</head>
+<body>
+
+<nav>
+  <span class="nav-brand">// WRITE-UP //</span>
+  <div class="nav-links">
+    <a href="#scenario">Scenario</a>
+    <a href="#mitre">MITRE</a>
+    <a href="#walkthrough">Walkthrough</a>
+    <a href="#findings">Findings</a>
+    <a href="#lessons">Lessons</a>
+  </div>
+</nav>
+
+<div class="hero">
+  <div class="hero-eyebrow">CyberDefenders · Endpoint Forensics · Memory Analysis</div>
+  <h1 class="hero-title">Incident Analysis:<br><span>BlackEnergy v2 Malware</span></h1>
+  <p class="hero-sub">Memory forensics investigation of a multinational corporation breach via BlackEnergy v2 rootkit: process injection, hidden DLL identification and kernel-mode driver analysis.</p>
+  <div class="badge-row">
+    <span class="badge b-blue">Memory Forensics</span>
+    <span class="badge b-amber">Medium Difficulty</span>
+    <span class="badge b-green">8 / 8 Flags</span>
+    <span class="badge b-purple">Volatility 3</span>
+  </div>
+</div>
+
+<div class="container">
+
+  <div class="meta-grid">
+    <div class="meta-cell"><div class="meta-label">Volatility Profile</div><div class="meta-value">WinXPSP2x86</div></div>
+    <div class="meta-cell"><div class="meta-label">Running Processes</div><div class="meta-value">19</div></div>
+    <div class="meta-cell"><div class="meta-label">Malicious Process</div><div class="meta-value">svchost.exe PID 880</div></div>
+    <div class="meta-cell"><div class="meta-label">Injected DLL</div><div class="meta-value">msxml3r.dll</div></div>
+    <div class="meta-cell"><div class="meta-label">DLL Base Address</div><div class="meta-value">0x980000</div></div>
+    <div class="meta-cell"><div class="meta-label">Rootkit Driver</div><div class="meta-value">str.sys</div></div>
+  </div>
+
+  <div class="section" id="scenario">
+    <div class="section-header">
+      <span class="section-num">01</span>
+      <span class="section-title">Scenario Summary</span>
+    </div>
+    <p class="prose">A multinational corporation suffered a targeted attack resulting in sensitive data theft. The attack leveraged a previously unseen variant of <code>BlackEnergy v2</code> which is a sophisticated rootkit with documented use against critical infrastructure. The task is to analyse a raw memory dump of the compromised Windows XP machine (<code>CYBERDEF-567078-20230213-171333.raw</code>) to determine the scope of infection: which processes were abused, how the malware concealed itself, and what artifacts confirm malicious activity.</p>
+  </div>
+
+  <div class="section">
+    <div class="section-header">
+      <span class="section-num">02</span>
+      <span class="section-title">Tools Used</span>
+    </div>
+    <div class="chip-row">
+      <span class="chip accent">Volatility 3</span>
+      <span class="chip accent">VirusTotal</span>
+      <span class="chip">md5sum / sha256sum</span>
+    </div>
+  </div>
+
+  <div class="section" id="mitre">
+    <div class="section-header">
+      <span class="section-num">03</span>
+      <span class="section-title">MITRE ATT&amp;CK Mapping</span>
+    </div>
+    <div class="mitre-wrap">
+      <table>
+        <thead>
+          <tr><th>Tactic</th><th>Technique ID</th><th>Technique</th><th>Evidence Observed</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="tactic t-exec">Execution</span></td>
+            <td><span class="tid"><a href="https://attack.mitre.org/techniques/T1106/" target="_blank">T1106</a></span></td>
+            <td>Native API</td>
+            <td><span class="ev">rootkit.exe spawned cmd.exe (PID 1960) via Windows API: confirmed via pstree parent-child relationship</span></td>
+          </tr>
+          <tr>
+            <td><span class="tactic t-priv">Privilege Escalation</span></td>
+            <td><span class="tid"><a href="https://attack.mitre.org/techniques/T1055/001/" target="_blank">T1055.001</a></span></td>
+            <td>DLL Injection</td>
+            <td><span class="ev">msxml3r.dll injected into svchost.exe PID 880: all three ldrmodules flags (InLoad, InInit, InMem) returned False, indicating hidden/unlinked DLL</span></td>
+          </tr>
+          <tr>
+            <td><span class="tactic t-def">Defense Evasion</span></td>
+            <td><span class="tid"><a href="https://attack.mitre.org/techniques/T1014/" target="_blank">T1014</a></span></td>
+            <td>Rootkit</td>
+            <td><span class="ev">BlackEnergy v2 kernel driver str.sys found at "C:\WINDOWS\system32\drivers\str.sys": kernel-level component hides processes and files</span></td>
+          </tr>
+          <tr>
+            <td><span class="tactic t-def">Defense Evasion</span></td>
+            <td><span class="tid"><a href="https://attack.mitre.org/techniques/T1036/004/" target="_blank">T1036.004</a></span></td>
+            <td>Masquerading: Match Legitimate Name</td>
+            <td><span class="ev">msxml3r.dll named to mimic legitimate msxml3.dll: one character difference designed to evade cursory inspection</span></td>
+          </tr>
+          <tr>
+            <td><span class="tactic t-disc">Discovery</span></td>
+            <td><span class="tid"><a href="https://attack.mitre.org/techniques/T1057/" target="_blank">T1057</a></span></td>
+            <td>Process Discovery</td>
+            <td><span class="ev">Malware uses mutant objects (Zones*, RasPbFile, Wininet*) within svchost.exe to enumerate and coordinate across processes</span></td>
+          </tr>
+          <tr>
+            <td><span class="tactic t-coll">Collection</span></td>
+            <td><span class="tid"><a href="https://attack.mitre.org/techniques/T1005/" target="_blank">T1005</a></span></td>
+            <td>Data from Local System</td>
+            <td><span class="ev">Sensitive data theft confirmed per scenario brief: rootkit provided persistent access enabling exfiltration</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="section" id="walkthrough">
+    <div class="section-header">
+      <span class="section-num">04</span>
+      <span class="section-title">Investigation Walkthrough</span>
+    </div>
+
+    <div class="phase">
+      <div class="phase-header">
+        <div class="phase-dot">1</div>
+        <div class="phase-title">Profile identification and environment baseline</div>
+      </div>
+      <div class="phase-body">
+        First step with any memory dump is establishing the correct Volatility profile, using the wrong one returns garbage output. Running <code>imageinfo</code> (Vol2) or <code>windows.info</code> (Vol3) suggested two candidates: WinXPSP2x86 and WinXPSP3x86. The lab accepts <strong>WinXPSP2x86</strong>.
+        <div class="cmd">vol -f CYBERDEF-567078-20230213-171333.raw windows.info</div>
+        Running <code>pslist</code> gave a full process inventory. Counting only active processes (threads &gt; 0, no Exit time) returned <strong>19 running processes</strong>. Two immediately stood out as terminated but suspicious: <strong>rootkit.exe</strong> and <strong>cmd.exe</strong>.
+        <div class="cmd">vol -f CYBERDEF-567078-20230213-171333.raw windows.pslist</div>
+        <img src="screenshots/1vol_windowspslist.png" alt="">
+      </div>
+    </div>
+
+    <div class="phase">
+      <div class="phase-header">
+        <div class="phase-dot">2</div>
+        <div class="phase-title">Suspicious process identification</div>
+      </div>
+      <div class="phase-body">
+        <code>rootkit.exe</code> is self-evidently abnormal. Using <code>pstree</code> confirmed the parent-child relationship: rootkit.exe spawned cmd.exe (PID 1960), consistent with an attacker dropping a rootkit and using it to launch a command shell. <code>psxview</code> further revealed processes attempting to hide from the standard process list.
+        <div class="cmd">vol -f CYBERDEF-567078-20230213-171333.raw windows.pstree | less -S</div>
+        <img src="screenshots/2vol__childprocesses.png" alt="">
+      </div>
+    </div>
+
+    <div class="phase">
+      <div class="phase-header">
+        <div class="phase-dot">3</div>
+        <div class="phase-title">Code injection detection via malfind</div>
+      </div>
+      <div class="phase-body">
+        <code>malfind</code> scans for memory regions that are executable, writable, and contain an MZ header (magic bytes): the hallmarks of injected code, it's not just random data. <strong>svchost.exe (PID 880)</strong> stood out clearly: VAD entry showed <code>PAGE_EXECUTE_READWRITE</code> protection and bytes beginning with <code>4D 5A</code> the MZ magic bytes of a PE executable. Base address of the injected region: <strong>0x980000</strong>.
+        <div class="cmd">vol -f CYBERDEF-567078-20230213-171333.raw windows.malfind</div>
+        <img src="screenshots/3vol_MZHeaderMagicBytes.png" alt="">
+        Dumping the injected region and submitting the hash to VirusTotal confirmed it as a BlackEnergy variant, multiple vendors flagged it as malicious.
+      </div>
+    </div>
+
+    <div class="phase">
+      <div class="phase-header">
+        <div class="phase-dot">4</div>
+        <div class="phase-title">Hidden DLL and kernel driver artifacts</div>
+      </div>
+      <div class="phase-body">
+        <code>ldrmodules</code> lists all modules loaded into a process and flags any unlinked from the three Windows loader: a DLL with InLoad=False, InInit=False, InMem=False is actively hiding itself.
+        <div class="cmd">vol -f CYBERDEF-567078-20230213-171333.raw windows.ldrmodules --pid 880</div>
+        One entry returned all three as False: <strong>msxml3r.dll</strong>
+        <img src="screenshots/4vol_msxml3rDLL.png" alt="">
+        Running <code>windows.handles --pid 880</code> revealed an unusual file reference: <strong>C:\WINDOWS\system32\drivers\str.sys</strong> the kernel-mode component of BlackEnergy used to hide processes and files from the OS.
+        <div class="cmd">vol -f CYBERDEF-567078-20230213-171333.raw windows.handles --pid 880</div>
+        There was a little too much in there so I added <code>| grep File</code> to it.
+        <div class="cmd">vol -f CYBERDEF-567078-20230213-171333.raw windows.handles --pid 880 | grep File</div>
+        <img src="screenshots/5vol_strSYS.png" alt="">
+      </div>
+    </div>
+  </div>
+
+  <div class="section" id="findings">
+    <div class="section-header">
+      <span class="section-num">05</span>
+      <span class="section-title">Key IOCs</span>
+    </div>
+    <div class="ioc-grid">
+      <div class="ioc-card"><div class="ioc-label">Malware Family</div><div class="ioc-val">BlackEnergy v2</div></div>
+      <div class="ioc-card"><div class="ioc-label">Volatility Profile</div><div class="ioc-val">WinXPSP2x86</div></div>
+      <div class="ioc-card"><div class="ioc-label">Malicious Process</div><div class="ioc-val">rootkit.exe</div></div>
+      <div class="ioc-card"><div class="ioc-label">Injected Process</div><div class="ioc-val">svchost.exe PID 880</div></div>
+      <div class="ioc-card"><div class="ioc-label">Injected DLL</div><div class="ioc-val">msxml3r.dll</div></div>
+      <div class="ioc-card"><div class="ioc-label">DLL Base Address</div><div class="ioc-val">0x980000</div></div>
+      <div class="ioc-card"><div class="ioc-label">Rootkit Driver</div><div class="ioc-val">C:\WINDOWS\system32\drivers\str.sys</div></div>
+      <div class="ioc-card"><div class="ioc-label">cmd.exe PID</div><div class="ioc-val">1960 (spawned by rootkit.exe)</div></div>
+    </div>
+  </div>
+
+  <div class="section" id="lessons">
+    <div class="section-header">
+      <span class="section-num">06</span>
+      <span class="section-title">Lessons Learned</span>
+    </div>
+    <div class="lesson"><span class="lesson-num">01</span><span class="lesson-text">The PAGE_EXECUTE_READWRITE flag combined with an MZ header is a clear code injection indicator. Legitimate DLLs do not load this way.</span></div>
+    <div class="lesson"><span class="lesson-num">02</span><span class="lesson-text">The ldrmodules InLoad/InInit/InMem flags are more reliable than filenames for identifying hidden modules.</span></div>
+    <div class="lesson"><span class="lesson-num">03</span><span class="lesson-text">BlackEnergy's kernel driver (str.sys) illustrates why memory forensics is essential, a rootkit operating at kernel level can hide itself from the OS entirely, making disk-based artifacts unreliable. Memory is the ground truth.</span></div>
+    <div class="lesson"><span class="lesson-num">04</span><span class="lesson-text">Volatility plugin sequencing — pslist → pstree → malfind → ldrmodules → handles — is a repeatable Windows memory triage workflow covering process anomalies, injection, hidden modules, and file artifacts in a logical order.</span></div>
+  </div>
+
+  <div class="section">
+    <div class="section-header">
+      <span class="section-num">07</span>
+      <span class="section-title">References</span>
+    </div>
+    <ul class="ref-list">
+      <li><a href="https://cyberdefenders.org/blueteam-ctf-challenges/blackenergy/" target="_blank">CyberDefenders — BlackEnergy Lab</a></li>
+      <li><a href="https://attack.mitre.org/software/S0089/" target="_blank">MITRE ATT&CK — BlackEnergy Malware (S0089)</a></li>
+      <li><a href="https://hacktivity.fr/volatility-3-cheatsheet/" target="_blank">Volatility 3 Command Reference</a></li>
+      <li><a href="https://www.virustotal.com/" target="_blank">VirusTotal — Hash &amp; IOC lookup</a></li>
+    </ul>
+  </div>
+
+</div>
+
+<footer>Write-Up · CyberDefenders · BlackEnergy v2 · Built for portfolio use</footer>
+
+</body>
+</html>

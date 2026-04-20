@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PacketMaze — Write-Up</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Syne:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0f12;
+    --surface: #13161b;
+    --surface2: #1a1e25;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #e8eaf0;
+    --muted: #6b7280;
+    --subtle: #9ca3af;
+    --accent: #7F77DD;
+    --accent-light: #AFA9EC;
+    --accent-bg: rgba(127,119,221,0.12);
+    --green: #1D9E75;
+    --green-bg: rgba(29,158,117,0.1);
+    --amber: #BA7517;
+    --amber-bg: rgba(186,117,23,0.1);
+    --red: #A32D2D;
+    --red-bg: rgba(163,45,45,0.1);
+    --blue: #185FA5;
+    --blue-bg: rgba(24,95,165,0.12);
+    --teal-bg: rgba(29,158,117,0.1);
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'Syne', sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body { background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 15px; line-height: 1.7; min-height: 100vh; }
+  nav {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(13,15,18,0.92); backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 2rem; display: flex; align-items: center; justify-content: space-between; height: 52px;
+  }
+  .nav-brand { font-family: var(--mono); font-size: 12px; color: var(--accent-light); letter-spacing: 0.08em; }
+  .nav-links { display: flex; gap: 1.5rem; }
+  .nav-links a { font-family: var(--mono); font-size: 11px; color: var(--muted); text-decoration: none; letter-spacing: 0.05em; transition: color 0.2s; }
+  .nav-links a:hover { color: var(--text); }
+  .hero { border-bottom: 1px solid var(--border); padding: 4rem 2rem 3rem; max-width: 900px; margin: 0 auto; animation: fadeUp 0.6s ease both; }
+  .hero-eyebrow { font-family: var(--mono); font-size: 11px; color: var(--accent-light); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 1rem; }
+  .hero-title { font-size: clamp(24px, 4vw, 38px); font-weight: 700; line-height: 1.2; color: var(--text); margin-bottom: 1rem; }
+  .hero-title span { color: var(--accent-light); }
+  .hero-sub { font-size: 14px; color: var(--subtle); max-width: 600px; margin-bottom: 1.5rem; }
+  .badge-row { display: flex; flex-wrap: wrap; gap: 8px; }
+  .badge { font-family: var(--mono); font-size: 10px; font-weight: 500; padding: 3px 10px; border-radius: 4px; letter-spacing: 0.05em; border: 1px solid; }
+  .b-purple { background: var(--accent-bg); color: var(--accent-light); border-color: rgba(175,169,236,0.3); }
+  .b-green { background: var(--green-bg); color: #5DCAA5; border-color: rgba(29,158,117,0.3); }
+  .b-amber { background: var(--amber-bg); color: #EF9F27; border-color: rgba(186,117,23,0.3); }
+  .b-blue { background: var(--blue-bg); color: #85B7EB; border-color: rgba(24,95,165,0.3); }
+  .container { max-width: 900px; margin: 0 auto; padding: 3rem 2rem; }
+  .meta-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin-bottom: 3rem; animation: fadeUp 0.6s 0.1s ease both; }
+  .meta-cell { background: var(--surface); padding: 14px 16px; }
+  .meta-label { font-family: var(--mono); font-size: 9px; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 5px; }
+  .meta-value { font-family: var(--mono); font-size: 12px; color: var(--text); font-weight: 500; word-break: break-all; }
+  .section { margin-bottom: 3rem; animation: fadeUp 0.6s ease both; }
+  .section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 1.25rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--border); }
+  .section-num { font-family: var(--mono); font-size: 10px; color: var(--accent-light); letter-spacing: 0.1em; }
+  .section-title { font-size: 16px; font-weight: 700; color: var(--text); }
+  .prose { font-size: 14px; color: var(--subtle); line-height: 1.8; }
+  .prose code { font-family: var(--mono); font-size: 12px; background: var(--surface2); color: var(--accent-light); padding: 1px 6px; border-radius: 3px; }
+  .chip-row { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { font-family: var(--mono); font-size: 11px; padding: 4px 12px; border-radius: 4px; background: var(--surface2); color: var(--subtle); border: 1px solid var(--border2); }
+  .chip.accent { background: var(--accent-bg); color: var(--accent-light); border-color: rgba(175,169,236,0.25); }
+  .note-box { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: 0 6px 6px 0; padding: 12px 16px; margin-bottom: 1rem; font-size: 13px; color: var(--subtle); }
+  .mitre-wrap { overflow-x: auto; border-radius: 8px; border: 1px solid var(--border); }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { font-family: var(--mono); font-size: 9px; font-weight: 500; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; padding: 10px 14px; text-align: left; background: var(--surface); border-bottom: 1px solid var(--border); }
+  td { padding: 10px 14px; border-bottom: 1px solid var(--border); vertical-align: top; line-height: 1.5; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+  .tactic { font-family: var(--mono); font-size: 10px; font-weight: 500; padding: 2px 8px; border-radius: 3px; white-space: nowrap; display: inline-block; }
+  .t-ia   { background: rgba(163,45,45,0.15); color: #E24B4A; }
+  .t-coll { background: var(--green-bg); color: #5DCAA5; }
+  .t-exfil{ background: var(--blue-bg); color: #85B7EB; }
+  .t-def  { background: var(--accent-bg); color: var(--accent-light); }
+  .t-exec { background: var(--amber-bg); color: #EF9F27; }
+  .tid { font-family: var(--mono); font-size: 11px; color: var(--muted); white-space: nowrap; }
+  .tid a { color: var(--accent-light); text-decoration: none; }
+  .tid a:hover { text-decoration: underline; }
+  .ev { font-size: 12px; color: var(--muted); }
+  .phase { margin-bottom: 2rem; }
+  .phase-header { display: flex; gap: 14px; align-items: flex-start; margin-bottom: 0.75rem; }
+  .phase-dot { width: 28px; height: 28px; border-radius: 50%; background: var(--accent-bg); border: 1px solid rgba(175,169,236,0.4); display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px; font-family: var(--mono); font-size: 10px; color: var(--accent-light); font-weight: 500; }
+  .phase-title { font-size: 14px; font-weight: 700; color: var(--text); padding-top: 4px; }
+  .phase-body { margin-left: 42px; font-size: 14px; color: var(--subtle); line-height: 1.8; }
+  .phase-body code { font-family: var(--mono); font-size: 12px; background: var(--surface2); color: var(--accent-light); padding: 1px 6px; border-radius: 3px; }
+  .cmd { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 10px 14px; font-family: var(--mono); font-size: 12px; color: #5DCAA5; margin: 10px 0; overflow-x: auto; }
+  .ss { border: 1px dashed rgba(255,255,255,0.1); border-radius: 6px; padding: 14px; text-align: center; margin: 10px 0; font-family: var(--mono); font-size: 11px; color: var(--muted); background: rgba(255,255,255,0.02); }
+  .ss img { max-width: 100%; border-radius: 4px; display: block; margin: 0 auto; }
+  .ioc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .ioc-card { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 12px 14px; }
+  .ioc-label { font-family: var(--mono); font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 5px; }
+  .ioc-val { font-family: var(--mono); font-size: 12px; color: var(--text); word-break: break-all; }
+  .lesson { display: flex; gap: 12px; margin-bottom: 1.25rem; padding: 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; }
+  .lesson-num { font-family: var(--mono); font-size: 11px; color: var(--accent-light); flex-shrink: 0; padding-top: 1px; min-width: 20px; }
+  .lesson-text { font-size: 13px; color: var(--subtle); line-height: 1.7; }
+  .ref-list { list-style: none; }
+  .ref-list li { padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .ref-list li:last-child { border-bottom: none; }
+  .ref-list a { color: var(--accent-light); text-decoration: none; font-family: var(--mono); font-size: 12px; }
+  .ref-list a:hover { text-decoration: underline; }
+  footer { border-top: 1px solid var(--border); padding: 2rem; text-align: center; font-family: var(--mono); font-size: 11px; color: var(--muted); }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+  @media (max-width: 600px) { .ioc-grid { grid-template-columns: 1fr; } .nav-links { display: none; } }
+  .phase-body img { display: block; margin: 10px 0; }
+</style>
+</head>
+<body>
+
+<nav>
+  <span class="nav-brand">// WRITE-UP //</span>
+  <div class="nav-links">
+    <a href="#scenario">Scenario</a>
+    <a href="#mitre">MITRE</a>
+    <a href="#walkthrough">Walkthrough</a>
+    <a href="#findings">Findings</a>
+    <a href="#lessons">Lessons</a>
+  </div>
+</nav>
+
+<div class="hero">
+  <div class="hero-eyebrow">CyberDefenders · Network Forensics · Insider Threat</div>
+  <h1 class="hero-title">Incident Analysis:<br><span>Insider Threat Network Investigation</span></h1>
+  <p class="hero-sub">Multi-protocol PCAP investigation of a suspected insider: correlating FTP credential exposure, EXIF metadata extraction, TLS session analysis, and encrypted communication patterns to build an evidence-backed behavioural timeline.</p>
+  <div class="badge-row">
+    <span class="badge b-purple">Network Forensics</span>
+    <span class="badge b-amber">Medium Difficulty</span>
+    <span class="badge b-green">11 / 11 Flags</span>
+    <span class="badge b-blue">Wireshark · exiftool</span>
+  </div>
+</div>
+
+<div class="container">
+
+  <div class="meta-grid">
+    <div class="meta-cell"><div class="meta-label">Subject IP</div><div class="meta-value">192.168.1.26</div></div>
+    <div class="meta-cell"><div class="meta-label">Subject MAC</div><div class="meta-value">c8:09:a8:57:47:93</div></div>
+    <div class="meta-cell"><div class="meta-label">FTP Password</div><div class="meta-value">AfricaCTF2021</div></div>
+    <div class="meta-cell"><div class="meta-label">File Exfiltrated</div><div class="meta-value">20210429_152157.jpg</div></div>
+    <div class="meta-cell"><div class="meta-label">Device (EXIF)</div><div class="meta-value">LM-Q725K (LG Q7+)</div></div>
+    <div class="meta-cell"><div class="meta-label">ProtonMail Contact</div><div class="meta-value">2021-04-30 01:04 UTC</div></div>
+  </div>
+
+  <div class="section" id="scenario">
+    <div class="section-header"><span class="section-num">01</span><span class="section-title">Scenario Summary</span></div>
+    <p class="prose">As an analyst working for a security service provider, you have been tasked with analysing a network capture of a monitored employee: a suspected insider threat. The PCAP file (<code>UNODC-GPC-001-003-JohnDoe-NetworkCapture-2021-04-29.pcapng</code>) covers the subject's network activity across multiple protocols: FTP, DNS, TLS, and UDP. 
+    <img src="" alt="">
+    The investigation requires correlating artifacts across all of these: file transfers, encrypted communications, DNS lookups and image metadata which allows us to build a complete picture of the subject's behaviour and intent.</p>
+  </div>
+
+  <div class="section">
+    <div class="section-header"><span class="section-num">02</span><span class="section-title">Tools Used</span></div>
+    <div class="chip-row">
+      <span class="chip accent">Wireshark</span>
+      <span class="chip accent">exiftool</span>
+      <span class="chip accent">MAC lookup (dnschecker)</span>
+      <span class="chip">Statistics → Conversations</span>
+      <span class="chip">Statistics → Protocol Hierarchy</span>
+      <span class="chip">TCP stream extraction</span>
+    </div>
+  </div>
+
+  <div class="section" id="mitre">
+    <div class="section-header"><span class="section-num">03</span><span class="section-title">MITRE ATT&amp;CK Mapping</span></div>
+    <div class="mitre-wrap">
+      <table>
+        <thead><tr><th>Tactic</th><th>Technique ID</th><th>Technique</th><th>Evidence Observed</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><span class="tactic t-ia">Initial Access</span></td>
+            <td><span class="tid"><a href="https://attack.mitre.org/techniques/T1078/" target="_blank">T1078</a></span></td>
+            <td>Valid Accounts</td>
+            <td><span class="ev">Subject authenticated to external FTP server using plaintext credentials (AfricaCTF2021), legitimate user abusing access for unauthorised data transfer</span></td>
+          </tr>
+          <tr>
+            <td><span class="tactic t-coll">Collection</span></td>
+            <td><span class="tid"><a href="https://attack.mitre.org/techniques/T1005/" target="_blank">T1005</a></span></td>
+            <td>Data from Local System</td>
+            <td><span class="ev">Photo file 20210429_152157.jpg transferred to external FTP server. EXIF metadata confirmed camera model LM-Q725K (LG Q7+), establishing device attribution</span></td>
+          </tr>
+          <tr>
+            <td><span class="tactic t-exfil">Exfiltration</span></td>
+            <td><span class="tid"><a href="https://attack.mitre.org/techniques/T1048/003/" target="_blank">T1048.003</a></span></td>
+            <td>Exfil over Unencrypted Protocol</td>
+            <td><span class="ev">File uploaded via FTP (STOR command) in plaintext to external server, credentials and file content fully visible in PCAP</span></td>
+          </tr>
+          <tr>
+            <td><span class="tactic t-def">Defense Evasion</span></td>
+            <td><span class="tid"><a href="https://attack.mitre.org/techniques/T1071/001/" target="_blank">T1071.001</a></span></td>
+            <td>Web Protocols (Encrypted)</td>
+            <td><span class="ev">Subject connected to ProtonMail via TLS 1.3, use of end-to-end encrypted email to avoid content monitoring</span></td>
+          </tr>
+          <tr>
+            <td><span class="tactic t-def">Defense Evasion</span></td>
+            <td><span class="tid"><a href="https://attack.mitre.org/techniques/T1564/" target="_blank">T1564</a></span></td>
+            <td>Hide artifacts</td>
+            <td><span class="ev">Non-standard /ftp directory created on FTP server April 20 at 17:53, pre-planned staging infrastructure created 9 days before the monitored session</span></td>
+          </tr>
+          <tr>
+            <td><span class="tactic t-exec">Pre-attack Research</span></td>
+            <td><span class="tid"><a href="https://attack.mitre.org/techniques/T1592/" target="_blank">T1592</a></span></td>
+            <td>Gather Victim Host Info</td>
+            <td><span class="ev">DNS lookup for www.7-zip.org (packet 15174) reveals subject researching compression tools, consistent with data staging preparation</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="section" id="walkthrough">
+    <div class="section-header"><span class="section-num">04</span><span class="section-title">Investigation Walkthrough</span></div>
+
+    <div class="phase">
+      <div class="phase-header"><div class="phase-dot">1</div><div class="phase-title">Subject identification and FTP credential exposure</div></div>
+      <div class="phase-body">
+        Starting with <code>Statistics → Protocol Hierarchy</code> gave an immediate overview of protocols present: FTP, FTP-DATA, DNS, TLS, HTTP (a mix of plaintext and encrypted activity suggesting multiple investigative angles).
+        <div class="cmd">Statistics → Protocol Hierarchy</div>
+        Filtering for FTP exposed a critical finding: FTP transmits credentials in plaintext. Packet 500 contained the subject's authentication with password <strong>AfricaCTF2021</strong> fully visible with no encryption.
+        <img src="" alt="">
+        The subject's IP was identified as <strong>192.168.1.26</strong> and MAC address as <strong>c8:09:a8:57:47:93</strong> from the Ethernet layer of any originating packet.
+        <div class="cmd">ftp</div>
+        <img src="screenshots/lab2_packetmaze/lab2_wireshark_ftpPASSWORD_1.png" alt="">
+      </div>
+    </div>
+
+    <div class="phase">
+      <div class="phase-header"><div class="phase-dot">2</div><div class="phase-title">DNS analysis and behavioural context</div></div>
+      <div class="phase-body">
+        Filtering for DNS and cross-referencing via <code>Statistics → Conversations → IPv6</code> revealed the DNS server's IPv6 address: <strong>fe80::c80b:adff:feaa:1db7</strong>. This required pivoting from the subject's IPv4 address to its MAC, then matching that MAC in the IPv6 tab: a multi-step correlation testing understanding of Layer 2 and Layer 3 addressing.
+        <div class="cmd">udp && ip.src == 192.168.1.26 && ip.dst == 24.39.217.246</div>
+        Jumping to packet 15174 (<code>frame.number == 15174</code>) revealed a DNS query for <strong>www.7-zip.org</strong>. In the context of an insider investigation, a subject researching compression tools is behaviourally significant and consistent with data staging.
+        <img src="" alt="">
+        Packet 27300 resolved to <strong>dfir.science</strong>.
+        <img src="screenshots/lab2_packetmaze/lab2_wireshark_7zipURL_2.png" alt="">
+      </div>
+    </div>
+
+    <div class="phase">
+      <div class="phase-header"><div class="phase-dot">3</div><div class="phase-title">File transfer and EXIF metadata extraction</div></div>
+      <div class="phase-body">
+        Filtering for FTP-DATA showed file transfer activity. Searching packet bytes for <code>20210429_152157.jpg</code> identified a STOR command in frame 7070: the subject uploading a photo to an external FTP server.
+        <img src="" alt="">
+        Following TCP stream 14 and saving the raw bytes extracted the actual image file.
+        <div class="cmd">ftp-data</div>
+        Running exiftool on the extracted image revealed camera metadata: model <strong>LM-Q725K</strong> which is an LG Q7+ smartphone.
+        <div class="cmd">exiftool 20210429_152157.jpg</div>
+        <img src="screenshots/lab2_packetmaze/lab2_wireshark_cameraMODEL_3.png" alt="">
+        The FTP directory listing (TCP streams 11→12) showed a non-standard <code>/ftp</code> directory created April 20 at <strong>17:53</strong> nine days prior, indicating pre-planned staging infrastructure.
+        <img src="screenshots/lab2_packetmaze/lab2_wireshark_ftpFOLDER_4.png" alt="">
+      </div>
+    </div>
+
+    <div class="phase">
+      <div class="phase-header"><div class="phase-dot">4</div><div class="phase-title">Protonmail, TLS session analysis and encrypted communication mapping</div></div>
+      <div class="phase-body">
+        <div class="cmd">dns.flags.response == 1</div>
+        This reveals <code>mail.protonmail.com</code> and its IP address <code>185.70.41.130</code>
+        <img src="screenshots/lab2_packetmaze/lab2_wireshark_protonmail_5A.png" alt="">
+        <img src="screenshots/lab2_packetmaze/lab2_wireshark_protonmail_5B.png" alt="">
+        Two TLS questions required locating specific sessions: one by session ID, one by destination domain. For the session ID, <code>tls</code> was used to search for <code>da4a0000342e4b73...</code>, returning frame 26906.
+        <img src="" alt="">
+        The reassembled PDU in frame 26913 contained the full TLS handshake and server certificate public key under Server Key Exchange.
+        <img src="" alt="">
+        For ProtonMail, <code>tls.handshake.type == 1 && tls.handshake.extensions_server_name=="protonmail.com"</code> the first Client Hello — at <strong>2021-04-30 01:04:29 UTC</strong> — contained the TLS 1.3 client random: <strong>24e92513b97a0348f733d16996929a79be21b0b1400cd7e2862a732ce7775b70</strong>. ProtonMail is end-to-end encrypted.
+        <img src="screenshots/lab2_packetmaze/lab2_wireshark_randomTLSkey_6.png" alt="">
+      </div>
+    </div>
+
+    <div class="phase">
+      <div class="phase-header"><div class="phase-dot">5</div><div class="phase-title">FTP server attribution via MAC lookup</div></div>
+      <div class="phase-body">
+        Filtering FTP-DATA packets revealed the FTP server MAC address: <strong>08:00:27:a6:1f:86</strong>. Submitting this to dnschecker.org's MAC lookup returned OUI registration in the <strong>United States</strong> which is a VirtualBox NIC, indicating a virtualised server.
+        <div class="cmd">ftp-data</div>
+        <img src="screenshots/lab2_packetmaze/lab2_wireshark_countryUS_7.png" alt="">
+      </div>
+    </div>
+  </div>
+
+  <div class="section" id="findings">
+    <div class="section-header"><span class="section-num">05</span><span class="section-title">Key Findings</span></div>
+    <div class="ioc-grid">
+      <div class="ioc-card"><div class="ioc-label">Subject IP</div><div class="ioc-val">192.168.1.26</div></div>
+      <div class="ioc-card"><div class="ioc-label">Subject MAC</div><div class="ioc-val">c8:09:a8:57:47:93</div></div>
+      <div class="ioc-card"><div class="ioc-label">FTP Credential</div><div class="ioc-val">AfricaCTF2021 (plaintext)</div></div>
+      <div class="ioc-card"><div class="ioc-label">File Exfiltrated</div><div class="ioc-val">20210429_152157.jpg</div></div>
+      <div class="ioc-card"><div class="ioc-label">Device Attributed</div><div class="ioc-val">LM-Q725K (LG Q7+)</div></div>
+      <div class="ioc-card"><div class="ioc-label">FTP Server Origin</div><div class="ioc-val">United States (MAC: 08:00:27:a6:1f:86)</div></div>
+      <div class="ioc-card"><div class="ioc-label">ProtonMail Contact</div><div class="ioc-val">2021-04-30 01:04:29 UTC</div></div>
+      <div class="ioc-card"><div class="ioc-label">Staging Folder Created</div><div class="ioc-val">April 20 at 17:53</div></div>
+    </div>
+  </div>
+
+  <div class="section" id="lessons">
+    <div class="section-header"><span class="section-num">06</span><span class="section-title">Lessons Learned</span></div>
+    <div class="lesson"><span class="lesson-num">01</span><span class="lesson-text">FTP exposes everything in plaintext: credentials, filenames, and full file content. SFTP or FTPS are the correct alternatives and their absence here is itself a finding.</span></div>
+    <div class="lesson"><span class="lesson-num">02</span><span class="lesson-text">EXIF metadata extracted from an image can provide device attribution that text-based evidence cannot. Camera model, GPS coordinates (if enabled), and timestamps embedded in image files are legally defensible artifacts, knowing how to extract and interpret them with exiftool is a genuinely useful skill.</span></div>
+    <div class="lesson"><span class="lesson-num">04</span><span class="lesson-text">Behavioural context matters as much as technical artifacts. ProtonMail use, 7-zip DNS lookups, pre-staged FTP directories, and photo exfiltration create a coherent insider threat narrative. None individually is conclusive: together they tell a clear story.</span></div>
+  </div>
+
+  <div class="section">
+    <div class="section-header"><span class="section-num">07</span><span class="section-title">References</span></div>
+    <ul class="ref-list">
+      <li><a href="https://cyberdefenders.org/blueteam-ctf-challenges/packetmaze/" target="_blank">CyberDefenders — PacketMaze Lab</a></li>
+      <li><a href="https://attack.mitre.org/techniques/T1048/003/" target="_blank">MITRE ATT&CK — Exfiltration over Unencrypted Protocol (T1048.003)</a></li>
+      <li><a href="https://exiftool.org/" target="_blank">exiftool documentation</a></li>
+      <li><a href="https://dnschecker.org/mac-lookup.php" target="_blank">MAC address lookup — dnschecker.org</a></li>
+      <li><a href="https://wiki.wireshark.org/TLS" target="_blank">Wireshark TLS analysis guide</a></li>
+    </ul>
+  </div>
+
+</div>
+
+<footer>DFIR Write-Up · CyberDefenders · PacketMaze · Built for portfolio use</footer>
+</body>
+</html>
